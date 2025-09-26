@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corazón Mágico y Multiplicador con Mensajes</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0d1117; /* Color de fallback */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            display: flex; /* Para centrar el contenido */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #background-element {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2; /* Detrás del canvas */
+            object-fit: cover;
+            filter: brightness(0.7); /* Oscurece un poco la imagen/gif para que el texto y los corazones resalten */
+        }
+
+        .content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            max-width: 80%;
+        }
+
+        #messageDisplay {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ffcccc;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            pointer-events: none; /* Para que no bloquee los clics en los corazones */
+        }
+
+        #permissionButton {
+            display: none;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin-top: 20px;
+            background-color:;
+            color: ;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <img id="background-element" src="" alt="fondo">
+
+    <div class="content">
+        <h1>¡creador!</h1>
+        <p>Vic ♥️ Persi!</p>
+        <button id="permissionButton">Permitir movimiento</button>
+    </div>
+
+    <div id="messageDisplay"></div>
+
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- CONFIGURACIÓN DEL FONDO (MODIFICA AQUÍ) ---
+        const useGifBackground = true; // Cambia a true para GIF, false para imagen
+        const imageUrl = 'https://i.ibb.co/L5hY5Fk/background.jpg'; // URL de tu imagen estática
+        const gifUrl = '4.gif'; // URL de tu GIF
+
+        const backgroundElement = document.getElementById('background-element');
+        if (useGifBackground) {
+            backgroundElement.src = gifUrl;
+        } else {
+            backgroundElement.src = imageUrl;
+        }
+        backgroundElement.onload = () => {
+            // Cuando la imagen/gif carga, ajusta el elemento si es necesario
+            backgroundElement.style.display = 'block'; // Asegúrate de que se muestre
+        };
+
+
+        // --- MENSAJES ALEATORIOS ---
+        const randomMessages = [
+            "¡Eres increíble!",
+            "¡Qué bien que estás aquí!",
+            "¡Me alegras el día!",
+            "¡Pura magia!",
+            "¡Sigue así!",
+            "¡Tienes un corazón de oro!",
+            "¡Sonríe!",
+            "¡Me encantas!",
+            "¡Un corazón para ti!",
+            "¡Hecho con cariño!"
+        ];
+        const messageDisplay = document.getElementById('messageDisplay');
+
+        function showRandomMessage() {
+            const message = randomMessages[Math.floor(Math.random() * randomMessages.length)];
+            messageDisplay.textContent = message;
+            messageDisplay.style.opacity = 1;
+            setTimeout(() => {
+                messageDisplay.style.opacity = 0;
+            }, 2000); // El mensaje desaparece después de 2 segundos
+        }
+
+
+        // --- Configuración de Three.js ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // --- Luces ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(5, 5, 5);
+        scene.add(pointLight);
+
+        // --- Geometría y Material del Corazón (para reutilizar) ---
+        const heartShape = new THREE.Shape();
+        const x = 0, y = 0;
+        heartShape.moveTo(x + 2.5, y + 2.5);
+        heartShape.bezierCurveTo(x + 2.5, y + 2.5, x + 2, y, x, y);
+        heartShape.bezierCurveTo(x - 3, y, x - 3, y + 3.5, x - 3, y + 3.5);
+        heartShape.bezierCurveTo(x - 3, y + 5.5, x - 1.5, y + 7.7, x + 2.5, y + 9.5);
+        heartShape.bezierCurveTo(x + 6, y + 7.7, x + 8, y + 4.5, x + 8, y + 3.5);
+        heartShape.bezierCurveTo(x + 8, y + 3.5, x + 8, y, x + 5, y);
+        heartShape.bezierCurveTo(x + 3.5, y, x + 2.5, y + 2.5, x + 2.5, y + 2.5);
+
+        const extrudeSettings = {
+            steps: 2,
+            depth: 2,
+            bevelEnabled: true,
+            bevelThickness: 1,
+            bevelSize: 1,
+            bevelOffset: 0,
+            bevelSegments: 10
+        };
+        const heartGeometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+
+        // --- Corazón Principal Fijo ---
+        const mainHeartMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+        const mainHeart = new THREE.Mesh(heartGeometry, mainHeartMaterial);
+        mainHeart.rotation.x = Math.PI; // Voltear el corazón
+        scene.add(mainHeart);
+
+        // Posicionar la cámara
+        camera.position.z = 25;
+
+        // --- Variables de Animación y Multiplicación ---
+        let hue = 0;
+        let pulseTime = 0;
+        const hearts = []; // Array para guardar los corazones que se multiplican
+
+        // --- Raycaster para detectar clics en los corazones ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function onPointerClick(event) {
+            // Calcular coordenadas del mouse en el rango (-1 a +1) para Three.js
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+            // Actualizar el raycaster con la cámara y la posición del mouse
+            raycaster.setFromCamera(mouse, camera);
+
+            // Calcular los objetos que intersectan el rayo
+            const intersects = raycaster.intersectObjects(scene.children);
+
+            if (intersects.length > 0) {
+                // Si se toca un objeto, muestra un mensaje
+                showRandomMessage();
+            }
+        }
+        window.addEventListener('click', onPointerClick); // Para PC
+        window.addEventListener('touchstart', onPointerClick); // Para móviles
+
+
+        // --- Función para crear un nuevo corazón ---
+        function createNewHeart() {
+            const randomColor = new THREE.Color().setHSL(Math.random(), 1, 0.5);
+            const newMaterial = new THREE.MeshPhongMaterial({ color: randomColor });
+            const newHeart = new THREE.Mesh(heartGeometry, newMaterial);
+
+            newHeart.rotation.x = Math.PI; // Voltear
+            newHeart.position.set(
+                (Math.random() - 0.5) * 40, // Posición X aleatoria
+                (Math.random() - 0.5) * 40, // Posición Y aleatoria
+                (Math.random() - 0.5) * 20  // Posición Z aleatoria
+            );
+            newHeart.scale.set(0.5, 0.5, 0.5); // Más pequeños
+
+            // Velocidad y dirección aleatorias para flotar
+            newHeart.userData = {
+                vx: (Math.random() - 0.5) * 0.1,
+                vy: (Math.random() - 0.5) * 0.1,
+                vz: (Math.random() - 0.5) * 0.1,
+                rotationSpeedX: (Math.random() - 0.5) * 0.05,
+                rotationSpeedY: (Math.random() - 0.5) * 0.05
+            };
+
+            scene.add(newHeart);
+            hearts.push(newHeart);
+        }
+
+        // --- Detección de Agitado (DeviceMotion) ---
+        let lastShakeTime = 0;
+        const SHAKE_THRESHOLD = 15;
+        const SHAKE_COOLDOWN = 500;
+
+        function handleDeviceMotion(event) {
+            const acceleration = event.accelerationIncludingGravity;
+            if (!acceleration || !acceleration.x || !acceleration.y || !acceleration.z) return;
+
+            const now = Date.now();
+            if (now - lastShakeTime < SHAKE_COOLDOWN) return;
+
+            const magnitude = Math.sqrt(
+                acceleration.x * acceleration.x +
+                acceleration.y * acceleration.y +
+                acceleration.z * acceleration.z
+            );
+
+            if (magnitude > SHAKE_THRESHOLD) {
+                console.log('¡Teléfono agitado! Magnitud:', magnitude);
+                createNewHeart();
+                lastShakeTime = now;
+            }
+        }
+
+        // --- Solicitar permiso en iOS (si es necesario) ---
+        const permissionButton = document.getElementById('permissionButton');
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+            permissionButton.style.display = 'block';
+            permissionButton.addEventListener('click', () => {
+                DeviceMotionEvent.requestPermission().then(permissionState => {
+                    if (permissionState === 'granted') {
+                        window.addEventListener('devicemotion', handleDeviceMotion);
+                        permissionButton.style.display = 'none';
+                    } else {
+                        alert('Permiso de movimiento denegado. No se podrán multiplicar los corazones.');
+                    }
+                }).catch(console.error);
+            });
+        } else {
+            window.addEventListener('devicemotion', handleDeviceMotion);
+        }
+
+        // --- Bucle de animación ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Animación del corazón principal (lateo y color)
+            pulseTime += 0.05;
+            const pulse = 1 + Math.sin(pulseTime) * 0.1;
+            mainHeart.scale.set(pulse, pulse, pulse);
+
+            hue += 0.005;
+            const mainColor = new THREE.Color().setHSL(hue % 1, 1, 0.5);
+            mainHeartMaterial.color.set(mainColor);
+
+            // Animación de los corazones que se multiplican
+            hearts.forEach(heart => {
+                heart.position.x += heart.userData.vx;
+                heart.position.y += heart.userData.vy;
+                heart.position.z += heart.userData.vz;
+                heart.rotation.x += heart.userData.rotationSpeedX;
+                heart.rotation.y += heart.userData.rotationSpeedY;
+
+                if (heart.position.length() > 100) {
+                    scene.remove(heart);
+                    hearts.splice(hearts.indexOf(heart), 1);
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- Responsividad ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
